@@ -1,0 +1,218 @@
+// Prisma schema — modelado para Postgres/Supabase, rodando localmente em SQLite no MVP.
+// Para migrar para Supabase: trocar `provider` para "postgresql" e `DATABASE_URL` para a connection string do projeto.
+// Enums são representados como String (compatível com SQLite); constantes ficam em src/types/enums.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         String     @default("ADMIN") // ADMIN | ATTENDANT
+  attendantId  String?    @unique
+  attendant    Attendant? @relation(fields: [attendantId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Attendant {
+  id            String   @id @default(cuid())
+  name          String
+  avatarUrl     String?
+  initials      String
+  status        String   @default("active") // active | vacation | inactive
+  dailyGoal     Float    @default(0)
+  monthlyGoal   Float    @default(0)
+  leadCapacity  Int      @default(100) // leads/mês
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user            User?
+  campaigns       Campaign[] @relation("PrimaryAttendant")
+  backupCampaigns Campaign[] @relation("BackupAttendant")
+  revenueEntries  RevenueEntry[]
+  dailyGoals      DailyGoal[]
+  monthlyGoals    MonthlyGoal[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  category    String?
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  offers        Offer[]
+  campaigns     Campaign[]
+  creatives     Creative[]
+  landingPages  LandingPage[]
+  revenueEntries RevenueEntry[]
+}
+
+model Offer {
+  id          String   @id @default(cuid())
+  name        String
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  description String?
+  cta         String?
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  campaigns Campaign[]
+}
+
+model Audience {
+  id            String   @id @default(cuid())
+  name          String
+  platform      String // meta | google | both
+  type          String // interest | custom | remarketing | lookalike | search | keywords | other
+  description   String?
+  location      String?
+  ageRange      String?
+  interests     String?
+  segmentation  String?
+  exclusions    String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  campaigns CampaignAudience[]
+}
+
+model Creative {
+  id           String   @id @default(cuid())
+  name         String
+  type         String // video | image | carousel | other
+  format       String?
+  dimensions   String?
+  status       String   @default("idea") // idea | production | review | approved | archived
+  driveUrl     String?
+  thumbnailUrl String?
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id])
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  campaigns CampaignCreative[]
+}
+
+model LandingPage {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  status    String   @default("active") // active | draft | archived
+  notes     String?
+  createdAt DateTime @default(now())
+
+  campaigns Campaign[]
+}
+
+model Campaign {
+  id                 String   @id @default(cuid())
+  name               String
+  productId          String?
+  product            Product? @relation(fields: [productId], references: [id])
+  platform           String // meta | google
+  objective          String // vendas | leads | trafego | remarketing | reconhecimento | outros
+  status             String   @default("planejamento")
+  startDate          DateTime
+  endDate            DateTime
+  plannedBudget      Float    @default(0)
+  actualSpend        Float    @default(0)
+  attendantId        String?
+  attendant          Attendant? @relation("PrimaryAttendant", fields: [attendantId], references: [id])
+  backupAttendantId  String?
+  backupAttendant    Attendant? @relation("BackupAttendant", fields: [backupAttendantId], references: [id])
+  landingPageId      String?
+  landingPage        LandingPage? @relation(fields: [landingPageId], references: [id])
+  offerId            String?
+  offer              Offer?   @relation(fields: [offerId], references: [id])
+  destinationChannel String? // whatsapp | site | loja | outro
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  audiences      CampaignAudience[]
+  creatives      CampaignCreative[]
+  revenueEntries RevenueEntry[]
+}
+
+model CampaignAudience {
+  campaignId String
+  audienceId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  audience   Audience @relation(fields: [audienceId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, audienceId])
+}
+
+model CampaignCreative {
+  campaignId String
+  creativeId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  creative   Creative @relation(fields: [creativeId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, creativeId])
+}
+
+model RevenueEntry {
+  id           String    @id @default(cuid())
+  attendantId  String
+  attendant    Attendant @relation(fields: [attendantId], references: [id])
+  campaignId   String?
+  campaign     Campaign? @relation(fields: [campaignId], references: [id])
+  productId    String?
+  product      Product?  @relation(fields: [productId], references: [id])
+  date         DateTime // dia do lançamento (00:00 local)
+  hour         Int // 0-23
+  amount       Float
+  leadsCount   Int       @default(1) // quantidade de leads novos representados neste lançamento
+  salesCount   Int       @default(1)
+  customerType String // new_lead | old_client
+  source       String // meta_ads | google_ads | organic | referral | other
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([date])
+  @@index([attendantId, date])
+}
+
+model DailyGoal {
+  id          String    @id @default(cuid())
+  attendantId String
+  attendant   Attendant @relation(fields: [attendantId], references: [id])
+  date        DateTime
+  amount      Float
+
+  @@unique([attendantId, date])
+}
+
+model MonthlyGoal {
+  id          String    @id @default(cuid())
+  attendantId String
+  attendant   Attendant @relation(fields: [attendantId], references: [id])
+  yearMonth   String // "2026-08"
+  amount      Float
+
+  @@unique([attendantId, yearMonth])
+}
+
+model Setting {
+  key   String @id
+  value String
+}
