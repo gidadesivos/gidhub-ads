@@ -17,13 +17,14 @@ export const PERIOD_OPTIONS = [
 
 export type PeriodValue = (typeof PERIOD_OPTIONS)[number]["value"];
 
+// Sem período informado na URL, o padrão exibido pelo DateRangeFilter é "Este mês" — mantido aqui para os dois lados baterem.
 export function resolvePeriod(period: string | undefined, from?: string, to?: string): { from: Date; to: Date } {
   const now = new Date();
-  switch (period) {
+  switch (period ?? "month") {
+    case "today":
+      return { from: startOfDay(now), to: endOfDay(now) };
     case "7d":
       return { from: startOfDay(subDays(now, 6)), to: endOfDay(now) };
-    case "month":
-      return { from: startOfMonth(now), to: endOfDay(now) };
     case "last_month": {
       const lastMonth = subMonths(now, 1);
       return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) };
@@ -33,8 +34,8 @@ export function resolvePeriod(period: string | undefined, from?: string, to?: st
         return { from: startOfDay(new Date(from)), to: endOfDay(new Date(to)) };
       }
       return { from: startOfDay(now), to: endOfDay(now) };
-    case "today":
+    case "month":
     default:
-      return { from: startOfDay(now), to: endOfDay(now) };
+      return { from: startOfMonth(now), to: endOfDay(now) };
   }
 }

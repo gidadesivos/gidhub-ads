@@ -24,6 +24,7 @@ export default async function RevenueByPlatformPage({ searchParams }: { searchPa
             </div>
             <div className="grid grid-cols-2 gap-3">
               <MetricCard label="Investimento" value={formatCurrency(r.spend)} />
+              <MetricCard label="Campanhas ativas" value={formatNumber(r.activeCampaigns)} />
               <MetricCard label="Faturamento leads novos" value={formatCurrency(r.revenue)} accent="success" />
               <MetricCard label="Leads novos" value={formatNumber(r.leads)} />
               <MetricCard label="Vendas" value={formatNumber(r.sales)} />

@@ -2,8 +2,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   CalendarDays,
-  Map,
-  Waypoints,
   Megaphone,
   Users,
   Wallet,
@@ -114,5 +112,3 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [{ label: "Configurações", href: "/configuracoes", icon: Settings }],
   },
 ];
-
-export const STRATEGY_MAP_ICON = Waypoints;

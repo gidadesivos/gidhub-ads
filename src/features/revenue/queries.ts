@@ -135,7 +135,7 @@ export async function getRevenueByPlatform(period?: string, from?: string, to?: 
       where: { date: { gte: range.from, lte: range.to }, campaignId: { not: null } },
       include: { campaign: true },
     }),
-    prisma.campaign.findMany({ select: { platform: true, actualSpend: true } }),
+    prisma.campaign.findMany({ select: { platform: true, actualSpend: true, status: true } }),
   ]);
 
   const platforms = ["meta", "google"] as const;
@@ -144,8 +144,10 @@ export async function getRevenueByPlatform(period?: string, from?: string, to?: 
     const revenue = platformEntries.reduce((sum, e) => sum + e.amount, 0);
     const sales = platformEntries.reduce((sum, e) => sum + e.salesCount, 0);
     const leads = platformEntries.reduce((sum, e) => sum + e.leadsCount, 0);
-    const spend = campaigns.filter((c) => c.platform === platform).reduce((sum, c) => sum + c.actualSpend, 0);
-    return { platform, revenue, sales, leads, spend, roas: calcRoas(revenue, spend), conversion: conversionRate(sales, leads) };
+    const platformCampaigns = campaigns.filter((c) => c.platform === platform);
+    const spend = platformCampaigns.reduce((sum, c) => sum + c.actualSpend, 0);
+    const activeCampaigns = platformCampaigns.filter((c) => c.status === "rodando").length;
+    return { platform, revenue, sales, leads, spend, activeCampaigns, roas: calcRoas(revenue, spend), conversion: conversionRate(sales, leads) };
   });
 
   return { range, rows };

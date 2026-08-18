@@ -154,6 +154,7 @@ export const KANBAN_COMERCIAL_COLUMNS = [
   "campanha_ativa",
   "leads_chegando",
   "atendimento",
+  "orcamento",
   "negociacao",
   "venda",
 ] as const;
@@ -163,6 +164,7 @@ export const KANBAN_COMERCIAL_LABELS: Record<KanbanComercialColumn, string> = {
   campanha_ativa: "Campanha ativa",
   leads_chegando: "Leads chegando",
   atendimento: "Atendimento",
+  orcamento: "Orçamento",
   negociacao: "Negociação",
   venda: "Venda",
 };

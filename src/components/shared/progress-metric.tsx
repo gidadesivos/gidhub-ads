@@ -4,13 +4,11 @@ import { cn } from "@/lib/utils";
 
 export function ProgressMetric({
   label,
-  current,
   currentLabel,
   goalLabel,
   percent,
 }: {
   label: string;
-  current?: string;
   currentLabel?: string;
   goalLabel?: string;
   percent: number;

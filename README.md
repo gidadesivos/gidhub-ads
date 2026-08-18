@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Central de Marketing
 
-## Getting Started
+Webapp interno de planejamento de marketing, campanhas de mídia paga (Meta Ads e Google Ads), gestão de criativos, atendentes comerciais e acompanhamento de faturamento de leads novos.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router) + **TypeScript**
+- **Tailwind CSS v4** + componentes no estilo shadcn/ui (Radix UI + CVA)
+- **Prisma ORM** — schema modelado para Postgres/Supabase, rodando localmente em **SQLite** (ver nota abaixo)
+- **React Hook Form** + **Zod** para formulários e validação
+- **Recharts** para gráficos, **React Flow** para o Mapa da Estratégia
+- **date-fns** com locale `pt-BR`, timezone `America/Sao_Paulo`, moeda `R$`
+- Autenticação por sessão (cookie httpOnly + JWT via `jose`), com dois perfis: `ADMIN` e `ATTENDANT`
+
+### Sobre o banco de dados
+
+O ambiente de desenvolvimento não tinha um projeto Supabase configurado, então o Prisma está apontando para SQLite local (`prisma/dev.db`) para que o app rode e persista dados de ponta a ponta sem depender de credenciais externas. O `schema.prisma` foi modelado para ser compatível com Postgres — para migrar para Supabase:
+
+1. Troque `provider = "sqlite"` para `provider = "postgresql"` em `prisma/schema.prisma`.
+2. Aponte `DATABASE_URL` (`.env`) para a connection string do projeto Supabase.
+3. Rode `npx prisma db push` (ou configure migrations com `prisma migrate`).
+4. Configure RLS no Supabase e troque a autenticação por cookie/JWT própria pelo Supabase Auth, se desejado.
+
+## Rodando localmente
 
 ```bash
+npm install
+npx prisma generate
+npx prisma db push
+npm run seed      # popula dados de demonstração
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Login de demonstração
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **Administrador:** `admin@gidhub.com.br` / `admin123`
+- **Atendente:** `barbara@gidhub.com.br` / `atendente123`
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+- `npm run dev` — ambiente de desenvolvimento
+- `npm run build` — build de produção
+- `npm run lint` — ESLint
+- `npm run seed` — repopula o banco com dados de demonstração (atendentes, produtos, públicos, criativos, campanhas e lançamentos de faturamento)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estrutura
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/            rotas (App Router) — grupo (app) para páginas autenticadas
+  components/ui/  primitivos de UI (estilo shadcn)
+  components/     shared: MetricCard, CampaignCard, AttendantCard, PageHeader, etc.
+  components/layout/ sidebar, topbar, busca global, tema
+  features/       por domínio: schema (zod) + actions (server actions) + queries (Prisma) + formulários
+  lib/            auth, prisma client, métricas, formatação, período de datas
+  types/          enums e tipos compartilhados
+prisma/
+  schema.prisma   modelo de dados
+  seed.ts         dados de demonstração
+```

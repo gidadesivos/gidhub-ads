@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { addMonths, startOfMonth, format } from "date-fns";
+import { addMonths, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getRoadmapData } from "@/features/planning/queries";
 import { PageHeader } from "@/components/shared/page-header";
