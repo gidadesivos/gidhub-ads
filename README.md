@@ -40,6 +40,20 @@ Acesse `http://localhost:3000`. Certifique-se de que o schema já foi aplicado n
 - **Administrador:** `admin@gidhub.com.br` / `admin123`
 - **Atendente:** `barbara@gidhub.com.br` / `atendente123`
 
+## Deploy na Vercel
+
+1. **Aplique o schema no Supabase antes do primeiro deploy** (seção acima) — cole `prisma/supabase_init.sql` no SQL Editor e rode `npm run seed` de algum lugar com acesso ao Postgres.
+2. Importe o repositório na Vercel normalmente (framework Next.js é detectado automaticamente — não precisa de `vercel.json`).
+3. Em **Project Settings → Environment Variables**, cadastre (Production e Preview):
+   - `DATABASE_URL` — connection string do **pooler** do Supabase (Project Settings → Database → Connection string → modo *Transaction*, porta `6543`, com `?pgbouncer=true` no final). Funções serverless abrem muitas conexões simultâneas; sem o pooler o limite de conexões do Postgres estoura rápido.
+   - `DIRECT_URL` — connection string **direta** (porta `5432`), usada só pelo `prisma generate` durante o build.
+   - `SESSION_SECRET` — um valor aleatório forte (`openssl rand -base64 32`). Sem essa variável o app recusa subir em produção (`NODE_ENV=production`) em vez de usar um segredo fraco.
+   - `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` — do painel do Supabase (Project Settings → API).
+4. O build (`npm run build`) já roda `prisma generate` antes do `next build` (via `postinstall` e via o próprio script `build`), então o Prisma Client sempre é gerado fresco para o ambiente da Vercel — não é preciso configurar nada extra de *build command*.
+5. Depois do deploy, troque a senha do usuário admin de demonstração (ou crie um usuário novo direto no banco) antes de divulgar o link — as credenciais do `npm run seed` são só para desenvolvimento.
+
+Veja `.env.example` para o formato de cada variável.
+
 ## Scripts
 
 - `npm run dev` — ambiente de desenvolvimento

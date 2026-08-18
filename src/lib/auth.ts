@@ -3,10 +3,10 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { getSessionSecretKey } from "@/lib/session-secret";
 import type { UserRole } from "@/types/enums";
 
 const SESSION_COOKIE = "gidhub_session";
-const secretKey = () => new TextEncoder().encode(process.env.SESSION_SECRET || "dev-secret-fallback");
 
 export type SessionPayload = {
   userId: string;
@@ -28,7 +28,7 @@ export async function createSessionToken(payload: SessionPayload) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("30d")
-    .sign(secretKey());
+    .sign(getSessionSecretKey());
 }
 
 export async function setSessionCookie(payload: SessionPayload) {
@@ -53,7 +53,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secretKey());
+    const { payload } = await jwtVerify(token, getSessionSecretKey());
     return payload as unknown as SessionPayload;
   } catch {
     return null;

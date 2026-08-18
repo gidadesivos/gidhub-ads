@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { getSessionSecretKey } from "@/lib/session-secret";
 
 const SESSION_COOKIE = "gidhub_session";
 const PUBLIC_PATHS = ["/login"];
-
-function secretKey() {
-  return new TextEncoder().encode(process.env.SESSION_SECRET || "dev-secret-fallback");
-}
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -25,7 +22,7 @@ export async function proxy(req: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, secretKey());
+    await jwtVerify(token, getSessionSecretKey());
     return NextResponse.next();
   } catch {
     const url = req.nextUrl.clone();
