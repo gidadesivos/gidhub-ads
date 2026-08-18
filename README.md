@@ -6,7 +6,7 @@ Webapp interno de planejamento de marketing, campanhas de mídia paga (Meta Ads 
 
 - **Next.js 16** (App Router) + **TypeScript**
 - **Tailwind CSS v4** + componentes no estilo shadcn/ui (Radix UI + CVA)
-- **Prisma ORM** — schema modelado para Postgres/Supabase, rodando localmente em **SQLite** (ver nota abaixo)
+- **Prisma ORM** apontando para **Postgres no Supabase** (ver nota abaixo)
 - **React Hook Form** + **Zod** para formulários e validação
 - **Recharts** para gráficos, **React Flow** para o Mapa da Estratégia
 - **date-fns** com locale `pt-BR`, timezone `America/Sao_Paulo`, moeda `R$`
@@ -14,24 +14,26 @@ Webapp interno de planejamento de marketing, campanhas de mídia paga (Meta Ads 
 
 ### Sobre o banco de dados
 
-O ambiente de desenvolvimento não tinha um projeto Supabase configurado, então o Prisma está apontando para SQLite local (`prisma/dev.db`) para que o app rode e persista dados de ponta a ponta sem depender de credenciais externas. O `schema.prisma` foi modelado para ser compatível com Postgres — para migrar para Supabase:
+`prisma/schema.prisma` usa `provider = "postgresql"` e `DATABASE_URL` (em `.env`, não versionado) aponta para o Postgres do projeto Supabase. A autenticação continua sendo a sessão própria (cookie httpOnly + JWT), não o Supabase Auth — `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY` ficam disponíveis para uso futuro no lado do cliente (Storage, Realtime etc.), mas nada os usa ainda.
 
-1. Troque `provider = "sqlite"` para `provider = "postgresql"` em `prisma/schema.prisma`.
-2. Aponte `DATABASE_URL` (`.env`) para a connection string do projeto Supabase.
-3. Rode `npx prisma db push` (ou configure migrations com `prisma migrate`).
-4. Configure RLS no Supabase e troque a autenticação por cookie/JWT própria pelo Supabase Auth, se desejado.
+**Aplicando o schema no Supabase:** o ambiente onde este código foi escrito tem a saída de rede restrita a HTTPS por uma política da organização, e o host do Supabase não estava liberado nela — então não foi possível rodar `prisma db push`/`prisma migrate` direto daqui. `prisma/supabase_init.sql` já contém o DDL completo gerado a partir do schema (via `prisma migrate diff`), pronto para colar no **SQL Editor** do painel do Supabase. Depois de rodar esse SQL, popule os dados de demonstração com `npm run seed` a partir de um ambiente com acesso normal ao Postgres (sua máquina, CI ou o próprio deploy) — o script é idempotente (limpa e recria os dados a cada execução).
+
+Se preferir aplicar via Prisma em vez do SQL Editor, rode a partir de um ambiente com acesso à porta 5432:
+
+```bash
+npx prisma db push
+npm run seed
+```
 
 ## Rodando localmente
 
 ```bash
 npm install
 npx prisma generate
-npx prisma db push
-npm run seed      # popula dados de demonstração
 npm run dev
 ```
 
-Acesse `http://localhost:3000`.
+Acesse `http://localhost:3000`. Certifique-se de que o schema já foi aplicado no Supabase (seção acima) antes de rodar.
 
 ### Login de demonstração
 

@@ -1,13 +1,13 @@
-// Prisma schema — modelado para Postgres/Supabase, rodando localmente em SQLite no MVP.
-// Para migrar para Supabase: trocar `provider` para "postgresql" e `DATABASE_URL` para a connection string do projeto.
-// Enums são representados como String (compatível com SQLite); constantes ficam em src/types/enums.ts.
+// Prisma schema — Postgres via Supabase.
+// Enums são representados como String (histórico: schema começou compatível com SQLite);
+// as constantes/opções ficam em src/types/enums.ts.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
