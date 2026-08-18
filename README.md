@@ -16,9 +16,14 @@ Webapp interno de planejamento de marketing, campanhas de mídia paga (Meta Ads 
 
 `prisma/schema.prisma` usa `provider = "postgresql"` e `DATABASE_URL` (em `.env`, não versionado) aponta para o Postgres do projeto Supabase. A autenticação continua sendo a sessão própria (cookie httpOnly + JWT), não o Supabase Auth — `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_ANON_KEY` ficam disponíveis para uso futuro no lado do cliente (Storage, Realtime etc.), mas nada os usa ainda.
 
-**Aplicando o schema no Supabase:** o ambiente onde este código foi escrito tem a saída de rede restrita a HTTPS por uma política da organização, e o host do Supabase não estava liberado nela — então não foi possível rodar `prisma db push`/`prisma migrate` direto daqui. `prisma/supabase_init.sql` já contém o DDL completo gerado a partir do schema (via `prisma migrate diff`), pronto para colar no **SQL Editor** do painel do Supabase. Depois de rodar esse SQL, popule os dados de demonstração com `npm run seed` a partir de um ambiente com acesso normal ao Postgres (sua máquina, CI ou o próprio deploy) — o script é idempotente (limpa e recria os dados a cada execução).
+**Aplicando o schema e os dados no Supabase:** o ambiente onde este código foi escrito tem a saída de rede restrita por uma política da organização (bloqueia qualquer conexão TCP direta de banco, inclusive via pooler), então não foi possível rodar `prisma db push`/`npm run seed` direto daqui. Dois arquivos prontos resolvem isso pelo **SQL Editor** do painel do Supabase, sem precisar de conexão Postgres de lugar nenhum:
 
-Se preferir aplicar via Prisma em vez do SQL Editor, rode a partir de um ambiente com acesso à porta 5432:
+1. `prisma/supabase_init.sql` — DDL completo (todas as tabelas), gerado via `prisma migrate diff`.
+2. `prisma/supabase_seed.sql` — dados de demonstração (atendentes, usuários, produtos, públicos, criativos, campanhas e lançamentos de faturamento), gerado via `node scripts/generate-seed-sql.mjs` — não usa Prisma nem precisa de rede, só bcrypt local para as senhas.
+
+Cole o conteúdo de cada um, nessa ordem, no SQL Editor e rode. Quer dados novos (datas relativas a "hoje")? Rode `node scripts/generate-seed-sql.mjs > prisma/supabase_seed.sql` de novo e cole o resultado.
+
+Se preferir aplicar via Prisma em vez do SQL Editor (a partir de um ambiente com acesso normal à rede):
 
 ```bash
 npx prisma db push
@@ -42,7 +47,7 @@ Acesse `http://localhost:3000`. Certifique-se de que o schema já foi aplicado n
 
 ## Deploy na Vercel
 
-1. **Aplique o schema no Supabase antes do primeiro deploy** (seção acima) — cole `prisma/supabase_init.sql` no SQL Editor e rode `npm run seed` de algum lugar com acesso ao Postgres.
+1. **Aplique o schema e os dados no Supabase antes do primeiro deploy** (seção acima) — cole `prisma/supabase_init.sql` e depois `prisma/supabase_seed.sql` no SQL Editor.
 2. Importe o repositório na Vercel normalmente (framework Next.js é detectado automaticamente — não precisa de `vercel.json`).
 3. Em **Project Settings → Environment Variables**, cadastre (Production e Preview):
    - `DATABASE_URL` — connection string do **pooler** do Supabase (Project Settings → Database → Connection string → modo *Transaction*, porta `6543`, com `?pgbouncer=true` no final). Funções serverless abrem muitas conexões simultâneas; sem o pooler o limite de conexões do Postgres estoura rápido.
